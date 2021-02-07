@@ -1,0 +1,80 @@
+README - distributed assignment 1
+
+Sapir Malatzky
+Yonatan Nagar
+
+Steps to run the program:
+
+1. Unzip the zip file
+2. Change directory into the unzipped folder
+*  From now we will refer to / as the project's directory
+** In / directory there are 3 sample input files:
+	input3.txt (3 entries, 1 of each task)
+	input100.txt (100 entries)
+	input2500.txt (2500 entries)
+3. mv <input file> /
+4. At / run:
+		mvn clean compile assembly:single 
+5. At / run:
+		cd target
+6. At /target/ run:
+		mv userApp-1.0-jar-with-dependencies.jar ..
+7. At /target/ run:
+		cd ..
+6. At / run:
+		java -jar userApp-1.0-jar-with-dependencies.jar <input file name> <output file name> <n> [terminate]
+7. When the program has finished running, a file named <output file name>.html will appear at /
+   You could run it using Firefox (for example) as:
+   At / run:
+   		firefox <output file name>.html
+   		<Replace firefox with a given browser or text editor>
+
+
+Additional information:
+
+# Did you think for more than 2 minutes about security? Do not send your credentials in plain text!
+
+We used IAM role assignments and security group to allow "default" initialization for the AWS objects without adding our own credentials to the cloud.
+
+
+
+# Did you think about scalability? Will your program work properly when 1 million clients connected at the same time? How about 2 million? 1 billion? Scalability is very important aspect of the system, be sure it is scalable! system limitations?
+
+AWS allows unlimited amount of queues of the SQS service, so our manager implementation holds a list of clients (user applications) and holds a unique queue for each client, granting the system the ability to handle 1 client or more as needed (There is no limit to the amount of clients it can handle).
+In addition, we restricted the number of worker instances the program can activate, due to AWS restriction of 20 instances running concurrently.
+
+
+
+# What about persistence? What if a node dies? What if a node stalls for a while? Have you taken care of all possible outcomes in the system? Think of more possible issues that might arise from failures. What did you do to solve it? What about broken communications? Be sure to handle all fail-cases!
+
+If a node(aka worker instance) dies or stalls a message for too long, the Visibility Timeout mechanism handles it.
+The way it works is once a message has been taken out of a queue, it's considered "in-flight" and is now invisible for 30 seconds while the instance handles it.
+If the instance manages to handle it in time, it removes the message from the queue and can continue to other assignments.
+If the instance dies or stalls, the timer kicks in and "returns" the message to the queue so that other workers can pick up the message and complete it.
+
+
+
+# Threads in your application, when is it a good idea? When is it bad? Invest time to think about threads in your application!
+
+Adding threads to the application might look effective, due to the fact we are currently concurrently handling assignments, we could assign threads per instance to grab a couple messages at once, instead of just one.
+In practice, this adds a layer of deep complexity to the worker implementation.
+It might be useful in handling huge number of assignments, but it may cause errors and delays because of the network's resources.
+
+
+
+# Are all your workers working hard? Or some are slacking? Why?
+
+As the system is defined, we might have workers doing most of the work and other workers doing very small amount of work, due to the fact we are not holding a balance factor of some sort, we could also let the manager deal out messages instead of each worker autonomously taking a message.
+
+
+# System initialization:
+
+We used remote access by SSH to enter an empty instance, then we downloaded the necessities (Java, Maven) to the machine and we created the basic image for our program.
+we then differentiated by tags:
+In a manager instance we downloaded the manager.jar file, and In a worker instance we downloaded the worker.jar file.
+We then snapshotted the instances and created 2 distinct images for our program, a manager image and a worker image.
+
+We used the supplied AMI we received in the console to initiate instances using those 2 images, where we added the fitting Userdata to run the corresponding part of the program.
+
+This allows our program to run instantaneously upon instance startup (without having delay due to dependencies missing).
+

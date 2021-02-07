@@ -1,0 +1,3 @@
+ToText	http://www.dgsdelicatessen.com/assets/DGS_Passover_Menu.pdf
+ToHTML	http://foodmannosh.com/wp-content/uploads/2013/02/Matzolah-article-Aus-Jewish-Outlook2.pdf
+ToImage	http://scheinerman.net/judaism/pesach/haggadah.pdf
